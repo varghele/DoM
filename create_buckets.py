@@ -19,19 +19,26 @@ BUCKET_NAMES = ["doppelm-detr-pretrade",
                 ]
 REGION = "EU"  # Specify the region
 
-def ensure_buckets_exist(bucket_names, region):
+def create_buckets_no_public_access(bucket_names, region):
     # Initialize the storage client
     client = storage.Client()
 
     for bucket_name in bucket_names:
         bucket = client.lookup_bucket(bucket_name)
         if bucket is None:
-            # If the bucket doesn't exist, create it
-            print(f"Bucket '{bucket_name}' does not exist. Creating it in the '{region}' region...")
-            bucket = client.create_bucket(bucket_name, location=region)
-            print(f"Bucket '{bucket_name}' created successfully in the '{region}' region.")
+            # Create bucket without public access
+            print(f"Creating bucket '{bucket_name}' in region '{region}' with no public access...")
+            bucket = storage.Bucket(client, name=bucket_name)
+            bucket = client.create_bucket(bucket, location=region)
+
+            # Enable Uniform Bucket-Level Access
+            bucket.iam_configuration.uniform_bucket_level_access_enabled = True
+            bucket.patch()  # Apply the changes to the bucket
+
+            print(f"Bucket '{bucket_name}' created successfully with no public access.")
         else:
             print(f"Bucket '{bucket_name}' already exists.")
 
+
 if __name__ == "__main__":
-    ensure_buckets_exist(BUCKET_NAMES, REGION)
+    create_buckets_no_public_access(BUCKET_NAMES, REGION)
